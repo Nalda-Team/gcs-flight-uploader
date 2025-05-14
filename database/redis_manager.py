@@ -18,8 +18,8 @@ class Redis_Manager:
         self.crawling_status_key = "crawling:status" # 크롤링 상태 (처리중, 종료)
         self.running_crawler_cnt_key = "running_crawler_cnt" # 처리중인 크롤러 수 카운터
     
-    """스케줄 큐의 내용을 원자적으로 비움"""
     def clear_schedule_queue(self):
+        """스케줄 큐의 내용을 원자적으로 비움"""
 
         try:
             # 파이프라인으로 원자적 실행
@@ -39,8 +39,8 @@ class Redis_Manager:
             print(f"Error clearing schedule queue content: {str(e)}")
             return None
 
-    """다음 스케줄을 원자적으로 가져옴 (FIFO)"""
     def get_schedule_params(self, timeout=15):
+        """다음 스케줄을 원자적으로 가져옴 (FIFO)"""
         
         try:
             result = self.redis_client.blmove(
@@ -57,8 +57,8 @@ class Redis_Manager:
             print(f"Error getting next schedule: {str(e)}")
             return None
 
-    """다음 프록시를 원자적으로 가져옴 (FIFO)"""
     def get_next_proxy(self):
+        """다음 프록시를 원자적으로 가져옴 (FIFO)"""
         
         try:
             result = self.redis_client.blmove(
@@ -76,8 +76,8 @@ class Redis_Manager:
             return None
     
 
-    """프록시를 다시 원본 큐에 추가"""
     def requeue_proxy(self, proxy):
+        """프록시를 다시 원본 큐에 추가"""
         
         try:
             proxy_str = json.dumps(proxy)
@@ -96,9 +96,7 @@ class Redis_Manager:
             return False
 
     def finish_schedule_processing(self, schedule, success=True):
-        """
-        스케줄 처리 완료를 원자적으로 처리
-        """
+        """스케줄 처리 완료를 원자적으로 처리"""
         try:
             schedule_str = json.dumps(schedule)
             pipe = self.redis_client.pipeline()
@@ -117,8 +115,8 @@ class Redis_Manager:
             print(f"Error finishing schedule processing: {str(e)}")
             return False
         
-    """프록시 큐에 남은 프록시 수를 반환합니다. (메인 큐, 처리중 큐, 총합)"""
     def get_proxy_queue_count(self):
+        """프록시 큐에 남은 프록시 수를 반환합니다. (메인 큐, 처리중 큐, 총합)"""
         try:
             pipe = self.redis_client.pipeline()
             pipe.llen(self.proxy_queue)
@@ -147,8 +145,8 @@ class Redis_Manager:
             return False
         
         
-    """모든 스케줄이 처리되었는지 확인 처리됐으면 True, 아니면 False"""
     def check_all_schedules_processed(self):
+        """모든 스케줄이 처리되었는지 확인 처리됐으면 True, 아니면 False"""
         pipe = self.redis_client.pipeline()
         pipe.llen(self.schedule_queue)
         pipe.llen(self.schedule_processing)
@@ -166,8 +164,8 @@ class Redis_Manager:
             # print(f'아직 스케줄이 남아있습니다! 대기중 {queue_length}, 처리중 {processing_length}')
             return False
 
-    """크롤링 상태를 초기화 (크롤링 시작 시 호출)"""
     def reset_crawling_status(self):
+        """크롤링 상태를 초기화 (크롤링 시작 시 호출)"""
         try:
             self.redis_client.set(self.crawling_status_key, "running")
             print("크롤링 상태를 'running'으로 초기화했습니다.")
@@ -176,8 +174,8 @@ class Redis_Manager:
             print(f"크롤링 상태 초기화 중 오류 발생: {str(e)}")
             return False
         
-    """크롤링 작업 완료 상태를 Redis에 저장"""
     def set_crawling_completed(self, status='completed'):
+        """크롤링 작업 완료 상태를 Redis에 저장"""
         try:
             self.redis_client.set(self.crawling_status_key, status)
             print(f"크롤링 상태를 '{status}'로 설정했습니다.")
@@ -187,8 +185,8 @@ class Redis_Manager:
             return False
         
 
-    """running_crawler_cnt 키가 없다면 생성하고, 있다면 값을 0으로 초기화합니다."""
     def init_running_crawler_cnt(self):
+        """running_crawler_cnt 키가 없다면 생성하고, 있다면 값을 0으로 초기화"""
         try:
             self.redis_client.set(self.running_crawler_cnt_key, 0)
             print(f"Initialized {self.running_crawler_cnt_key} to 0")
@@ -197,8 +195,8 @@ class Redis_Manager:
             print(f"Error initializing {self.running_crawler_cnt_key}: {str(e)}")
             return False
 
-    """running_crawler_cnt 값을 1 증가시킵니다."""
     def increment_crawler_cnt(self):
+        """running_crawler_cnt 값을 1 증가시킵니다."""
         try:
             # INCR 명령어는 원자적으로 값을 1 증가시킴
             # 키가 없을 경우 자동으로 생성하고 0으로 초기화한 후 1 증가
@@ -208,8 +206,8 @@ class Redis_Manager:
             print(f"Error incrementing {self.running_crawler_cnt_key}: {str(e)}")
             return None
 
-    """running_crawler_cnt 값을 1 감소시킵니다."""
     def decrement_crawler_cnt(self):
+        """running_crawler_cnt 값을 1 감소시킵니다."""
 
         lua_script = """
         local key = KEYS[1]
@@ -238,7 +236,7 @@ class Redis_Manager:
             return None
 
     def get_crawler_cnt(self):
-        """running_crawler_cnt 현재 값을 조회합니다."""
+        """현재 running_crawler_cnt 값 조회"""
         try:
             value = self.redis_client.get(self.running_crawler_cnt_key)
             if value is None:
