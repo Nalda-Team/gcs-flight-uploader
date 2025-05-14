@@ -123,17 +123,16 @@ class CrawlerManager:
         
         if response:
             target_date=datetime.strptime(target_date, '%Y%m%d').date().isoformat()
-            seat_class=self.seat_class_map[seat_class]
 
             schedules = response['data']['domesticFlights']['departures']
 
             # 일정이 없으면 'N'로 로깅하고 return
             if len(schedules)==0:
-                print('일정이 없습니다!')
                 finish_schedule_processing(schedule, success=True)
-                self.logger.insert_success_log(route_key=route_key, target_date=target_date, seat_class=seat_class, total_duration=int(duration), status='N')
+                print('일정이 없습니다!')
                 process_end = time.time()
                 duration = process_end - process_start
+                self.logger.insert_success_log(route_key=route_key, target_date=target_date, seat_class=self.seat_class_map[seat_class], total_duration=int(duration), status='N')
                 requeue_proxy(proxy=proxy)
                 return 0
             
@@ -159,7 +158,6 @@ class CrawlerManager:
                     f'(총 소요시간: {int(duration)}초')
                 #   f'API 요청 소요시간: {int(api_duration)}초, '
                 #   f'업로드 소요시간: {int(upload_duration)}초, '
-                #   f'기타 소요시간: {int(other_duration)}초)')
         else:
             finish_schedule_processing(schedule, success=False)
             requeue_proxy(proxy=proxy) # if response=='retry' else remove_from_processing(proxy=proxy)
@@ -207,18 +205,15 @@ class CrawlerManager:
             api_duration = (api1_end - api1_start) + (api2_end - api2_start)
             
             if response :
-                
-                
                 target_date=datetime.strptime(target_date, '%Y%m%d').date().isoformat()
-                seat_class=self.seat_class_map[seat_class]
                 
                 schedules = response['data']['internationalList']['results']['schedules']
                 if len(schedules)==0:
+                    finish_schedule_processing(schedule, success=True)
                     print('일정이 없습니다!')
                     process_end = time.time()
                     duration = process_end - process_start
-                    finish_schedule_processing(schedule, success=True)
-                    self.logger.insert_success_log(route_key=route_key, target_date=target_date, seat_class=seat_class, total_duration=int(duration), status='N')
+                    self.logger.insert_success_log(route_key=route_key, target_date=target_date, seat_class=self.seat_class_map[seat_class], total_duration=int(duration), status='N')
                     requeue_proxy(proxy=proxy)
                     return 0
                 
